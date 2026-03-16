@@ -184,8 +184,8 @@ export default function Donate() {
 
               <div className="bg-white p-4 rounded-2xl shadow-inner border max-w-xs mx-auto mb-8">
                 <img 
-                  src={`${import.meta.env.BASE_URL}images/qr-placeholder.png`} 
-                  alt="UPI QR Code" 
+                  src={`${import.meta.env.BASE_URL}images/qr-code.png`} 
+                  alt="UPI QR Code - PhonePe" 
                   className="w-full h-auto rounded-xl"
                 />
               </div>

@@ -285,6 +285,14 @@ export async function customFetch<T = unknown>(
 
   const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
 
+  // Auto-inject JWT token from localStorage if no Authorization header is set
+  if (!headers.has("authorization") && typeof localStorage !== "undefined") {
+    const token = localStorage.getItem("sevasrot_token");
+    if (token) {
+      headers.set("authorization", `Bearer ${token}`);
+    }
+  }
+
   if (
     typeof init.body === "string" &&
     !headers.has("content-type") &&
