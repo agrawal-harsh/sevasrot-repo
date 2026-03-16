@@ -1,0 +1,28 @@
+packages:
+  "framer-motion": "For smooth page transitions and beautiful staggered list animations"
+  "date-fns": "For elegant date formatting across the application"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility to efficiently merge Tailwind CSS classes"
+  "lucide-react": "Beautiful, consistent icon set"
+  "react-hook-form": "For robust form state management and validation"
+  "@hookform/resolvers": "To integrate Zod schemas with react-hook-form"
+  "zod": "For runtime type checking and form validation"
+
+images:
+  - path: "artifacts/sevasrot/public/images/hero-bg.png"
+    description: "A serene, highly detailed, photorealistic image of a beautiful Indian cow (Gau Mata) adorned with subtle marigold garlands, standing in a sunlit green meadow during golden hour. Warm saffron, gold, and earthy tones. Spiritual, peaceful, and majestic atmosphere."
+    aspect_ratio: "16:9"
+  - path: "artifacts/sevasrot/public/images/mandala-pattern.png"
+    description: "A subtle, elegant, seamless Indian mandala and rangoli pattern in light warm cream and soft saffron colors. Designed to be used as a faint background texture for a spiritual website."
+    aspect_ratio: "1:1"
+  - path: "artifacts/sevasrot/public/images/qr-placeholder.png"
+    description: "A clean, modern stylized UPI QR code graphic with a small silhouette of a cow in the center. Surrounded by a saffron orange border. Looks like a professional payment scanner code."
+    aspect_ratio: "1:1"
+  - path: "artifacts/sevasrot/public/images/auth-bg.png"
+    description: "A warm, abstract background with soft gradients of saffron, orange, and deep red, featuring faint spiritual motifs and glowing light leaks. Perfect for a login page side panel."
+    aspect_ratio: "9:16"
+
+notes:
+  - Google OAuth will redirect to /?token=JWT. The frontend handles picking this up and clearing the URL.
+  - Seva Drive image uploads use standard FormData with multiple files appended as 'images'.
+  - Using generated Orval hooks from @workspace/api-client-react, passing Authorization headers manually where needed.

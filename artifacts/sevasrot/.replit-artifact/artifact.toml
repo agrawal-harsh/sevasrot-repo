@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Sevasrot - Cow Welfare Platform"
+version = "1.0.0"
+id = "artifacts/sevasrot"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 26167
+name = "web"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/sevasrot run dev"
+
+[services.env]
+PORT = "26167"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/sevasrot", "run", "build"]
+publicDir = "artifacts/sevasrot/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"

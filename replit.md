@@ -1,8 +1,8 @@
-# Workspace
+# Sevasrot - Cow Welfare Platform
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+Full-stack MERN-style web application for tracking seva drives and managing donations for cow welfare. Built with React + Vite (frontend) and Express.js (backend) with PostgreSQL via Drizzle ORM.
 
 ## Stack
 
@@ -10,87 +10,105 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Node.js version**: 24
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
-- **API framework**: Express 5
+- **Frontend**: React + Vite (artifacts/sevasrot), TailwindCSS, Wouter routing
+- **Backend**: Express 5 (artifacts/api-server)
 - **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
+- **Auth**: JWT + Google OAuth 2.0 (custom PKCE flow)
+- **Image Storage**: Cloudinary (seva drive images)
+- **Validation**: Zod (zod/v4), drizzle-zod
 - **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
 
-## Structure
+## Project Structure
 
 ```text
-artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
+artifacts/
+├── sevasrot/           # React + Vite frontend
+│   ├── src/
+│   │   ├── pages/      # Home, Drives, DriveDetail, Donations, Donate, Login, Register, Profile, AdminDashboard
+│   │   ├── components/ # Navbar, Footer, UI components
+│   │   ├── hooks/      # use-auth.tsx, use-admin.ts
+│   │   └── App.tsx     # Wouter router with all routes
+│   └── public/images/  # Static images (hero, mandala, qr, auth)
+└── api-server/         # Express 5 API
+    └── src/
+        ├── routes/     # auth.ts, donations.ts, drives.ts, admin.ts, health.ts
+        ├── middlewares/ # verifyToken.ts, isAdmin.ts
+        └── lib/        # cloudinary.ts
+
+lib/
+├── api-spec/           # OpenAPI 3.1 spec + Orval codegen config
+├── api-client-react/   # Generated React Query hooks
+├── api-zod/            # Generated Zod schemas
+└── db/                 # Drizzle ORM
+    └── src/schema/     # users.ts, donations.ts, seva_drives.ts
 ```
 
-## TypeScript & Composite Projects
+## Database Tables
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
+- **users**: id, name, email, password (hashed), auth_provider (local|google), google_id, role (user|admin), created_at
+- **donations**: id, user_id, amount, is_anonymous, display_name, status (pending|approved|rejected), created_at, reviewed_at, reviewed_by
+- **seva_drives**: id, title, description, location, date, images (text[]), created_by, created_at
 
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
+## API Routes (mounted at /api)
 
-## Root Scripts
+### Auth
+- POST /auth/register — email/password register
+- POST /auth/login — email/password login
+- GET /auth/me — current user (protected)
+- GET /auth/google — Google OAuth redirect
+- GET /auth/google/callback — Google OAuth callback → redirects to /?token=JWT
 
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
+### Donations
+- POST /donations/create — create pending donation (protected user)
+- GET /donations/approved — all approved donations + total (public)
+- GET /donations/my — current user's donations (protected)
+- GET /donations/pending — pending donations list (admin)
+- PATCH /donations/:id/approve — approve donation (admin)
+- PATCH /donations/:id/reject — reject donation (admin)
 
-## Packages
+### Drives
+- GET /drives — all seva drives (public)
+- GET /drives/:id — single drive (public)
+- POST /drives/create — create drive with Cloudinary image upload (admin, multipart/form-data)
+- PUT /drives/:id — update drive (admin)
+- DELETE /drives/:id — delete drive (admin)
 
-### `artifacts/api-server` (`@workspace/api-server`)
+### Admin
+- GET /admin/pending-count — pending donation count (admin)
+- GET /admin/all-donations — all donations with user info (admin)
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
+## Authentication
 
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+- JWT stored in localStorage as `sevasrot_token`
+- Google OAuth: GET /api/auth/google → Google → /api/auth/google/callback → /?token=JWT
+- Frontend captures ?token param on load, saves to localStorage, cleans URL
+- All protected endpoints: Authorization: Bearer {token} header
 
-### `lib/db` (`@workspace/db`)
+## Environment Variables Required
 
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
+- JWT_SECRET
+- GOOGLE_CLIENT_ID
+- GOOGLE_CLIENT_SECRET
+- CLOUDINARY_CLOUD_NAME
+- CLOUDINARY_API_KEY
+- CLOUDINARY_API_SECRET
+- DATABASE_URL (auto-provisioned by Replit)
+- REPLIT_DOMAINS (auto-provided by Replit)
 
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
+## Frontend Pages
 
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
+1. `/` — Home: hero, donation counter, latest 3 drives preview
+2. `/drives` — All seva drives grid
+3. `/drives/:id` — Drive detail with image gallery
+4. `/donations` — Approved donations list + total
+5. `/login` — Email/password + Google login
+6. `/register` — Email/password + Google signup
+7. `/donate` — Protected: donation form → UPI QR code → success
+8. `/profile` — Protected: user info + own donation history
+9. `/admin` — Admin only: pending donations, all donations, seva drives management
 
-### `lib/api-spec` (`@workspace/api-spec`)
+## Design
 
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
-
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
-
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+- Saffron-orange primary color theme
+- Warm Indian cultural aesthetic with mandala patterns
+- Custom AI-generated images: hero-bg.png, mandala-pattern.png, qr-placeholder.png, auth-bg.png
