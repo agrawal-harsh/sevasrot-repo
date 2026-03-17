@@ -45,7 +45,7 @@ export default function Register() {
   };
 
   const handleGoogleSignup = () => {
-    window.location.href = "/api/auth/google";
+    window.location.href = `${API_BASE_URL}/api/auth/google`
   };
 
   return (
