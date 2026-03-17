@@ -1,6 +1,6 @@
 [build]
   command = "pnpm install && pnpm --filter @workspace/sevasrot run build"
-  publish = "artifacts/sevasrot/dist"
+  publish = "artifacts/sevasrot/dist/public"
 
 [[redirects]]
   from = "/*"
