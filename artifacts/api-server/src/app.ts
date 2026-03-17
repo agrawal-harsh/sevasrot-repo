@@ -8,7 +8,7 @@ const app: Express = express();
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://your-netlify-app.netlify.app"
+    "https://sevasrot.netlify.app"
   ],
   credentials: true
 }));
