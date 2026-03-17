@@ -2,7 +2,7 @@ import app from "./app.js";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
-const rawPort = process.env["PORT"];
+const rawPort = process.env["PORT"] || 3000;
 
 if (!rawPort) {
   throw new Error(
