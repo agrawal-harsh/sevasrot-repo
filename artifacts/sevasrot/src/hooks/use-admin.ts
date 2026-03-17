@@ -10,6 +10,7 @@ interface CreateDriveFormData {
 }
 
 export function useCreateDriveWithImages() {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
   const { token } = useAuth();
   const queryClient = useQueryClient();
 
@@ -27,7 +28,8 @@ export function useCreateDriveWithImages() {
         });
       }
 
-      const res = await fetch("/api/drives/create", {
+
+      const res = await fetch(`${API_BASE_URL}/api/drives/create`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
