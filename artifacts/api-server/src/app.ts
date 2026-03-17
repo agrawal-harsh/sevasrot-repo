@@ -6,8 +6,11 @@ import router from "./routes/index.js";
 const app: Express = express();
 
 app.use(cors({
-  origin: true,
-  credentials: true,
+  origin: [
+    "http://localhost:5173",
+    "https://your-netlify-app.netlify.app"
+  ],
+  credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
