@@ -6,6 +6,7 @@ export type ErrorType<T = unknown> = ApiError<T>;
 
 export type BodyType<T> = T;
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const NO_BODY_STATUS = new Set([204, 205, 304]);
 const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
@@ -29,6 +30,17 @@ function resolveUrl(input: RequestInfo | URL): string {
   if (typeof input === "string") return input;
   if (isUrl(input)) return input.toString();
   return input.url;
+}
+
+
+
+function getFullUrl(input: RequestInfo | URL): string {
+  const url = resolveUrl(input);
+  // If URL is relative (doesn't start with http:// or https://), prepend API_BASE_URL
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    return `${API_BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+  }
+  return url;
 }
 
 function mergeHeaders(...sources: Array<HeadersInit | undefined>): Headers {
@@ -305,9 +317,10 @@ export async function customFetch<T = unknown>(
     headers.set("accept", DEFAULT_JSON_ACCEPT);
   }
 
-  const requestInfo = { method, url: resolveUrl(input) };
+  const fullUrl = getFullUrl(input);
+  const requestInfo = { method, url: fullUrl };
 
-  const response = await fetch(input, { ...init, method, headers });
+  const response = await fetch(fullUrl, { ...init, method, headers });
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);
